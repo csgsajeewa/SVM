@@ -13,11 +13,9 @@ import libsvm.*;
 public class SVMTest {
 
     private double[][] train;
-    private double[][] test;
-
+   
     public SVMTest() {
         train = new double[1000][];
-        test = new double[10][];
 
         for (int i = 0; i < train.length; i++) {
             if (i + 1 > (train.length / 2)) {        // 50% positive

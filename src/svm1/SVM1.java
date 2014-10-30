@@ -15,12 +15,14 @@ public class SVM1 {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
-        SVMTest svmt=new SVMTest();
-        svm_model model=svmt.svmTrain();
-        double[] features={1,0,550};
-        double v=svmt.predict(features, model);
-        System.out.println(v);
-        svmt.evaluate(features, model);
+    public static void main(String[] args) throws Exception {
+//        SVMTest svmt=new SVMTest();
+//        svm_model model=svmt.svmTrain();
+//        double[] features={1,0,550};
+//        double v=svmt.predict(features, model);
+//        System.out.println(v);
+//        svmt.evaluate(features, model);
+        WekaTest wt=new WekaTest();
+        wt.loadFromTextFiles();
     }
 }

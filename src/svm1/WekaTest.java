@@ -210,12 +210,6 @@ public class WekaTest {
         String svmOptions = "-S 1 -K 3";
         svm.setOptions(weka.core.Utils.splitOptions(svmOptions));
         
-//        Tag t1=new Tag(1,"SVMTYPE_NU_SVC");
-//        Tag t2=new Tag(3,"SVMTYPE_EPSILON_SVR");
-//        Tag[] ts={t1,t2};
-//        SelectedTag st=new SelectedTag(3, ts);
-//        System.out.println(st.getSelectedTag().getID());
-//        svm.setSVMType(st);
         System.out.println("&&&&&&&&"+svm.getSVMType()+svm.getKernelType());//1,3 best result 81%
        
         //perform cross vlaidation

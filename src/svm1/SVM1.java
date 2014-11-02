@@ -24,6 +24,7 @@ public class SVM1 {
 //        svmt.evaluate(features, model);
         WekaTest wt=new WekaTest();
         wt.testCrossValidataion();
+ //       wt.loadFromTextFiles();
         
     }
 }

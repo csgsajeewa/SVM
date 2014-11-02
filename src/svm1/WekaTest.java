@@ -10,6 +10,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
+import weka.attributeSelection.CfsSubsetEval;
+import weka.attributeSelection.GreedyStepwise;
 import weka.classifiers.Evaluation;
 import weka.classifiers.functions.LibSVM;
 import weka.classifiers.meta.GridSearch;
@@ -20,12 +22,14 @@ import weka.core.Instances;
 import weka.core.SelectedTag;
 import weka.core.SparseInstance;
 import weka.core.Tag;
+import weka.core.Utils;
 import weka.core.converters.ConverterUtils.DataSource;
 import weka.core.converters.TextDirectoryLoader;
 import weka.core.stemmers.SnowballStemmer;
 import weka.core.tokenizers.NGramTokenizer;
 import weka.filters.AllFilter;
 import weka.filters.Filter;
+import weka.filters.supervised.attribute.AttributeSelection;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 /**
@@ -95,7 +99,7 @@ public class WekaTest {
         StringToWordVector filter = new StringToWordVector();
         filter.setLowerCaseTokens(true);
         filter.setOutputWordCounts(true);
-   //     filter.setTFTransform(true);
+        //     filter.setTFTransform(true);
         filter.setIDFTransform(true);
         filter.setStopwords(new File("C:\\Users\\hp\\Desktop\\SVM implementation\\StopWords.txt"));
         filter.setStemmer(stemmer);
@@ -190,7 +194,7 @@ public class WekaTest {
         filter.setOutputWordCounts(true);
 //        filter.setTFTransform(true);
         filter.setIDFTransform(true);
-        filter.setStopwords(new File("C:\\Users\\hp\\Desktop\\SVM implementation\\StopWords.txt"));
+        filter.setStopwords(new File("C:\\Users\\hp\\Desktop\\SVM implementation\\StopWordsR1.txt"));
         filter.setTokenizer(tokenizer);
         filter.setStemmer(stemmer);
         System.out.println("Stemmer Name- " + filter.getStemmer());
@@ -209,17 +213,21 @@ public class WekaTest {
 
         //initialize the model and set SVM type and kernal type
         LibSVM svm = new LibSVM();
-        //-S 1 -K 3 -D 3 -G 0.0 -R 0.0 -N 0.5 -M 40.0 -C 1.0 -E 0.0010 -P 0.1
-        String svmOptions = "-S 0 -K 2 -C 38.03125 -G 0";
+        //-S 1 -K 3 -D 3 -G 0.0 -R 0.0 -N 0.5 -M 40.0 -C 1.0 -E 0.0010 -P 0.1 Best G 0.001953125 for C=32578
+        String svmOptions = "-S 0 -K 2 -C 1 -G 0.001953125";
         svm.setOptions(weka.core.Utils.splitOptions(svmOptions));
         System.out.println("&&&&&&&&" + svm.getSVMType() + svm.getKernelType());//1,3 best result 81%
-        
-        
-        //perform cross vlaidation
-        Evaluation evaluation = new Evaluation(dataFiltered);
-        evaluation.crossValidateModel(svm, dataFiltered, 2, new Random(1));
-        System.out.println(evaluation.toSummaryString());
-        System.out.println(evaluation.weightedAreaUnderROC());
+
+        //select most relevant features for classification
+        //dataFiltered=featureSelection(dataFiltered);
+        //System.out.println("Selected Features"+dataFiltered);
+
+        gridSearch(svm, dataFiltered);
+      //  perform cross vlaidation
+//        Evaluation evaluation = new Evaluation(dataFiltered);
+//        evaluation.crossValidateModel(svm, dataFiltered, 2, new Random(1));
+//        System.out.println(evaluation.toSummaryString());
+//        System.out.println(evaluation.weightedAreaUnderROC());
     }
 
     public void testFilter() throws Exception {
@@ -228,26 +236,68 @@ public class WekaTest {
         filter.setOptions(options);
         System.out.println(filter.getLowerCaseTokens());
     }
-    
-    public void gridSearch(LibSVM svm,Instances dataFiltered) throws Exception{
-        GridSearch gs=new GridSearch();
+
+    public void gridSearch(LibSVM svm, Instances dataFiltered) throws Exception {
+        GridSearch gs = new GridSearch();
         gs.setClassifier(svm);
         gs.setFilter(new AllFilter());
+
         
+
         gs.setXProperty("classifier.cost");
-        gs.setXMin(Math.pow(2,-5));
-        gs.setXMax(32768.03125);
-        gs.setXStep(Math.pow(2,2));
-        //gs.setXBase(2);
-        
+        gs.setXMin(-5);
+        gs.setXMax(15);
+        gs.setXStep(2);
+        gs.setXBase(2);
+        gs.setXExpression("pow(BASE,I)");
+
         gs.setYProperty("classifier.gamma");
-        gs.setYMin(Math.pow(2,-15));
-        gs.setYMax(8.000030517578125);
-        gs.setYStep(Math.pow(2,2));
-        //gs.setYBase(2);
+        gs.setYMin(-8.5);
+        gs.setYMax(-8);
+        gs.setYStep(0.05);
+        gs.setYBase(2);
+        gs.setYExpression("pow(BASE,I)");
         //-y-property classifier.kernel.gamma -y-min -5.0 -y-max 2.0 -y-step 1.0 -y-base 10.0 -y-expression pow(BASE,I) -filter weka.filters.AllFilter -x-property classifier.nu -x-min 0.01 -x-max 1.0 -x-step 10.0 -x-base 10.0 -x-expression I -sample-size 100.0 -traversal COLUMN-WISE -log-file "C:\Program Files\Weka-3-6" -S 1 -W weka.classifiers.functions.LibSVM -- -S 2 -K 2 -D 3 -G 0.0 -R 0.0 -N 0.5 -M 40.0 -C 1.0 -E 0.0010 -P 0.1
+
+        int EVALUATION_CC = 0;
+        int EVALUATION_RMSE = 1;
+        int EVALUATION_RRSE = 2;
+        int EVALUATION_MAE = 3;
+        int EVALUATION_RAE = 4;
+        int EVALUATION_COMBINED = 5;
+        int EVALUATION_ACC = 6;
+        int EVALUATION_KAPPA = 7;    
+        Tag[] TAGS_EVALUATION = {
+            new Tag(EVALUATION_CC, "CC", "Correlation coefficient"),
+            new Tag(EVALUATION_RMSE, "RMSE", "Root mean squared error"),
+            new Tag(EVALUATION_RRSE, "RRSE", "Root relative squared error"),
+            new Tag(EVALUATION_MAE, "MAE", "Mean absolute error"),
+            new Tag(EVALUATION_RAE, "RAE", "Root absolute error"),
+            new Tag(EVALUATION_COMBINED, "COMB", "Combined = (1-abs(CC)) + RRSE + RAE"),
+            new Tag(EVALUATION_ACC, "ACC", "Accuracy"),
+            new Tag(EVALUATION_KAPPA, "KAP", "Kappa")
+        };
+        SelectedTag st=new SelectedTag(EVALUATION_ACC, TAGS_EVALUATION);
+        System.out.println(st.getTags());
+        gs.setEvaluation(st);
+        
+        gs.setDebug(true);  
         
         gs.buildClassifier(dataFiltered);
-        System.out.println("&&&&&&&&&&&&"+gs.getValues());
+        System.out.println("Criteria " + gs.getEvaluation().getSelectedTag().getID());
+        System.out.println("&&&&&&&&&&&&" + gs.getValues());
+    }
+
+    public Instances featureSelection(Instances data) throws Exception {
+        System.out.println("Attribute Selection");
+        AttributeSelection filter = new AttributeSelection();
+        CfsSubsetEval eval = new CfsSubsetEval();
+        GreedyStepwise search = new GreedyStepwise();
+        search.setSearchBackwards(true);
+        filter.setEvaluator(eval);
+        filter.setSearch(search);
+        filter.setInputFormat(data);
+        Instances newData = Filter.useFilter(data, filter);
+        return newData;
     }
 }

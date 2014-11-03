@@ -23,10 +23,10 @@ public class WordNetTest {
     public void testDictionary() throws IOException {
 
         // construct the URL to the Wordnet dictionary directory
-        String wnhome = "C:\\Program Files(x86)\\WordNet\\2.1";
+        String wnhome = "C:\\Program Files (x86)\\WordNet\\2.1\\dict";
         System.out.println(wnhome);
-        String path = wnhome + File.separator + "dict ";
-        URL url = new URL("file", null, path);
+        String path = wnhome + File.separator + "dict";
+        URL url = new URL("file", null, wnhome);
 
         // construct the dictionary object and open it
         IDictionary dict = new Dictionary(url);

@@ -18,22 +18,27 @@ import java.net.URL;
  *
  * @author hp
  */
+
+/**
+ * configure WordNet- download wordnet
+ * @author hp
+ */
 public class WordNetTest {
 
     public void testDictionary() throws IOException {
 
         // construct the URL to the Wordnet dictionary directory
-        String wnhome = "C:\\Program Files (x86)\\WordNet\\2.1\\dict";
+        String wnhome = "C:\\Program Files (x86)\\WordNet\\2.1";
         System.out.println(wnhome);
         String path = wnhome + File.separator + "dict";
-        URL url = new URL("file", null, wnhome);
+        URL url = new URL("file", null, path);
 
         // construct the dictionary object and open it
         IDictionary dict = new Dictionary(url);
         dict.open();
 
         // look up first sense of the word "dog "
-        IIndexWord idxWord = dict.getIndexWord("dog", POS.NOUN);
+        IIndexWord idxWord = dict.getIndexWord("read", POS.VERB);
         IWordID wordID = idxWord.getWordIDs().get(0);
         IWord word = dict.getWord(wordID);
         System.out.println("Id = " + wordID);

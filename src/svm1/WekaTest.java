@@ -16,6 +16,7 @@ import weka.attributeSelection.CfsSubsetEval;
 import weka.attributeSelection.GreedyStepwise;
 import weka.classifiers.Evaluation;
 import weka.classifiers.functions.LibSVM;
+import weka.classifiers.meta.FilteredClassifier;
 import weka.classifiers.meta.GridSearch;
 import weka.core.Attribute;
 import weka.core.FastVector;
@@ -450,5 +451,61 @@ public class WekaTest {
 
        
 
+    }
+    
+    /**
+     * this is implemented as per given in http://jmgomezhidalgo.blogspot.com.es/2013/01/text-mining-in-weka-chaining-filters.html
+     * reason for using this when classifying instances in real world what we are doing is first use filter
+     * to transform training data and then use the same filter for test data. When we use filtered classifer
+     * same thing happens. but if we use previous approach then first we transform all the data (training and test)
+     * and then give it to the classifier. It is not similar to real world scenario.
+     */
+    public void testChainClassifier() throws IOException, Exception{
+        //set tokenizer - we can specify n-grams for classification
+        NGramTokenizer tokenizer = new NGramTokenizer();
+        tokenizer.setNGramMinSize(1);
+        tokenizer.setNGramMaxSize(1);
+        tokenizer.setDelimiters("\\W");
+
+        //set stemmer - set english stemmer
+        SnowballStemmer stemmer = new SnowballStemmer();
+        stemmer.setStemmer("english");
+
+        //create new filter for vector transformation
+        StringToWordVector filter = new StringToWordVector();
+        filter.setLowerCaseTokens(true);
+        filter.setOutputWordCounts(true);
+//      filter.setTFTransform(true);
+//      filter.setIDFTransform(true);
+//      filter.setStopwords(new File("C:\\Users\\hp\\Desktop\\SVM implementation\\StopWordsR1.txt"));
+        filter.setTokenizer(tokenizer);
+        filter.setStemmer(stemmer);
+        System.out.println("Stemmer Name- " + filter.getStemmer());
+
+        //import data from file
+        TextDirectoryLoader docLoader = new TextDirectoryLoader();
+        docLoader.setDirectory(new File("C:\\Users\\hp\\Desktop\\SVM implementation\\CrimeNews"));
+        Instances data = docLoader.getDataSet();
+        System.out.println("\n\nImported data:\n\n" + data);
+
+        //create a filtered classifier
+        FilteredClassifier fc=new FilteredClassifier();
+        
+        //initialize the model and set SVM type and kernal type
+        LibSVM svm = new LibSVM();
+        //-S 1 -K 3 -D 3 -G 0.0 -R 0.0 -N 0.5 -M 40.0 -C 1.0 -E 0.0010 -P 0.1 Best G 0.001953125 for C=32578
+        String svmOptions = "-S 0 -K 2 -C 32578 -G 0.0038498";
+        svm.setOptions(weka.core.Utils.splitOptions(svmOptions));
+        System.out.println("&&&&&&&&" + svm.getSVMType() + svm.getKernelType());//1,3 best result 81%
+
+        // set classifier and filter for filtered classifier
+        fc.setClassifier(svm);
+        fc.setFilter(filter);
+        
+        // perform cross vlaidation
+        Evaluation evaluation = new Evaluation(data);
+        evaluation.crossValidateModel(fc, data, 2, new Random(1));
+        System.out.println(evaluation.toSummaryString());
+        System.out.println(evaluation.weightedAreaUnderROC());
     }
 }
